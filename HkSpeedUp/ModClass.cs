@@ -146,13 +146,19 @@ namespace HkSpeedUp
 
         private void Update()
         {
-            if (!globalSwitch) return;
+            if (!globalSwitch)
+            {
+                SpeedMultiplier = 1;
+                return;
+            }
 
             ModDisplay.Instance.Display("game speed: " + (formatType == 0 ?
                 SpeedMultiplier.ToString(SpeedMultiplier >= 10f ? "00.00" : "0.00", CultureInfo.InvariantCulture) :
                 (Math.Round(SpeedMultiplier*100)).ToString("0.##\\%")));
             
             ModDisplay.Instance.Update();
+
+            SpeedMultiplier = SpeedMultiplier;
 
             if (lockSwitch) return;
 
