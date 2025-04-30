@@ -16,6 +16,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.PlayerLoop;
 using System.Globalization;
+using HutongGames.PlayMaker.Actions;
+using System.IO;
 
 namespace HkSpeedUp
 {
@@ -47,9 +49,9 @@ namespace HkSpeedUp
             }
         }
 
-        public override string GetVersion() => "1.2.3.4.5.6.7";
+        public override string GetVersion() => "v1";
 
-        private ILHook[] _coroutineHooks;
+       //private ILHook[] _coroutineHooks;
 
         bool IMenuMod.ToggleButtonInsideMenu => true;
 
@@ -130,9 +132,6 @@ namespace HkSpeedUp
             };
         }
 
-
-
-
         public override void Initialize()
         {
             Time.timeScale = SpeedMultiplier;
@@ -141,8 +140,6 @@ namespace HkSpeedUp
 
             ModDisplay.Instance = new ModDisplay();
         }
-
-
 
         private void Update()
         {
