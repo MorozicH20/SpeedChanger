@@ -1,23 +1,9 @@
 ﻿using Modding;
-using Modding.Menu;
 using System;
-using System.Collections;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using Mono.Cecil.Cil;
-using MonoMod.Cil;
-using MonoMod.RuntimeDetour;
 using UnityEngine;
-using Vasi;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.PlayerLoop;
 using System.Globalization;
-using HutongGames.PlayMaker.Actions;
-using System.IO;
 
 namespace HkSpeedUp
 {
@@ -43,15 +29,16 @@ namespace HkSpeedUp
             {
                 if (value > 0)
                 {
-                    Time.timeScale = value;
+                    if (Time.timeScale != 0)
+                    {
+                        Time.timeScale = value;
+                    }
                     _speedMultiplier = value;
                 }
             }
         }
 
-        public override string GetVersion() => "v1";
-
-       //private ILHook[] _coroutineHooks;
+        public override string GetVersion() => "1.0.1";
 
         bool IMenuMod.ToggleButtonInsideMenu => true;
 
@@ -149,7 +136,7 @@ namespace HkSpeedUp
                 return;
             }
 
-            ModDisplay.Instance.Display("game speed: " + (formatType == 0 ?
+            ModDisplay.Instance.Display("Game Speed: " + (formatType == 0 ?
                 SpeedMultiplier.ToString(SpeedMultiplier >= 10f ? "00.00" : "0.00", CultureInfo.InvariantCulture) :
                 (Math.Round(SpeedMultiplier*100)).ToString("0.##\\%")));
             
