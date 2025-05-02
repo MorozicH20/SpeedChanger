@@ -16,7 +16,7 @@ namespace HkSpeedUp
         private DateTime DisplayExpireTime = DateTime.Now;
         private TimeSpan DisplayDuration = TimeSpan.FromSeconds(6);
         private Vector2 TextSize = new(800, 500);
-        private Vector2 TextPosition = new(0.22f, 0.25f);
+        private Vector2 TextPosition = new(0.22f, 0.243f);
 
         private GameObject _canvas;
         private UnityEngine.UI.Text _text;
@@ -35,7 +35,7 @@ namespace HkSpeedUp
             UnityEngine.Object.DontDestroyOnLoad(_canvas);
 
             _text = CanvasUtil.CreateTextPanel(
-                _canvas, "Boss Attacks", 24, TextAnchor.LowerLeft,
+                _canvas, "", 24, TextAnchor.LowerLeft,
                 new CanvasUtil.RectData(TextSize, Vector2.zero, TextPosition, TextPosition),
                 CanvasUtil.GetFont("Perpetua")
             ).GetComponent<UnityEngine.UI.Text>();
