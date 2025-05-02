@@ -2,22 +2,38 @@
 using System;
 using JetBrains.Annotations;
 using UnityEngine;
+using Mono.Cecil.Cil;
 using System.Collections.Generic;
 using System.Globalization;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
+using System.Reflection;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Collections;
 
 namespace HkSpeedUp
 {
     [UsedImplicitly]
     public class HkSpeedUp : Mod, IMenuMod
     {
+        public override string GetVersion() => "1.0.2";
 
+        /* Global settings */
         private KeyCode bindUp = KeyCode.Alpha9;
         private KeyCode bindDown = KeyCode.Alpha8;
 
         private bool globalSwitch = true;
         private bool lockSwitch = false;
         private int formatType = 0;
+        private void ChangeGlobalSwitchState(bool state)
+        {
+            globalSwitch = state;
+            if (!state)
+                SpeedMultiplier = 1;
+        }
 
+        /* Handle timescale changes */
         private float _speedMultiplier = 1;
         public float SpeedMultiplier
         {
@@ -38,18 +54,10 @@ namespace HkSpeedUp
             }
         }
 
-        public override string GetVersion() => "1.0.1";
-
+        /* Create menu */
         bool IMenuMod.ToggleButtonInsideMenu => true;
 
         public bool ToggleButtonInsideMenu => true;
-
-        private void ChangeGlobalSwitchState(bool state)
-        {
-            globalSwitch = state;
-            if (!state)
-                SpeedMultiplier = 1;
-        }
 
         List<IMenuMod.MenuEntry> IMenuMod.GetMenuData(IMenuMod.MenuEntry? toggleButtonEntry)
         {
@@ -119,11 +127,48 @@ namespace HkSpeedUp
             };
         }
 
+        /* Handle freeze frames */
+        private ILHook[] _coroutineHooks;
+
+        private static readonly MethodInfo[] FreezeCoroutines = (
+            from method in typeof(GameManager).GetMethods()
+            where method.Name.StartsWith("FreezeMoment")
+            where method.ReturnType == typeof(IEnumerator)
+            select method.GetCustomAttribute<IteratorStateMachineAttribute>() into attr
+            select attr.StateMachineType into type
+            select type.GetMethod("MoveNext", BindingFlags.NonPublic | BindingFlags.Instance)
+        ).ToArray();
+
+        private void ScaleFreeze(ILContext il)
+        {
+            var cursor = new ILCursor(il);
+
+            cursor.GotoNext
+            (
+                MoveType.After,
+                x => x.MatchLdfld(out _),
+                x => x.MatchCall<Time>("get_unscaledDeltaTime")
+            );
+
+            cursor.EmitDelegate<Func<float>>(() => _speedMultiplier);
+
+            cursor.Emit(OpCodes.Mul);
+        }
+
+        /* Set up the hooks */
         public override void Initialize()
         {
             Time.timeScale = SpeedMultiplier;
 
             ModHooks.HeroUpdateHook += Update;
+
+            _coroutineHooks = new ILHook[FreezeCoroutines.Length];
+            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
+            {
+                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
+
+                LogDebug($"Hooked {coro.DeclaringType?.Name}!");
+            }
 
             ModDisplay.Instance = new ModDisplay();
         }
