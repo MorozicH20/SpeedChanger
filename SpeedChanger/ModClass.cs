@@ -233,6 +233,7 @@ namespace SpeedChanger
             else if (Input.GetKeyDown(_slowDownKeybind))
                 SpeedMultiplier -= GS.step;
         }
+
         public void Unload()
         {
             ModDisplay.Instance.Destroy();
