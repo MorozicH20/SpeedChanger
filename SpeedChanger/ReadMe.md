@@ -1,8 +1,6 @@
-# HkSpeedUp
+## SpeedChanger
 
-A mod for the game Hollow Knight.
-
-Speed Up / Slow Down your game.
+Speed up or slow down your game. A more customisable and user-friendly version of the Sanic mod.
 
 To change the default keybinds edit HkSpeedUp.GlobalSettings.json
 
