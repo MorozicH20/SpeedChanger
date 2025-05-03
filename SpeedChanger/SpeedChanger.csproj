@@ -8,11 +8,11 @@
     <!--<DocumentationFile>$(OutputPath)/$(AssemblyTitle).xml</DocumentationFile>-->
   </PropertyGroup>
   <PropertyGroup>
-    <RootNamespace>HkSpeedUp</RootNamespace>
-    <AssemblyName>HkSpeedUp</AssemblyName>
+    <RootNamespace>SpeedChanger</RootNamespace>
+    <AssemblyName>SpeedChanger</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyTitle>HkSpeedUp</AssemblyTitle>
-    <Product>HkSpeedUp</Product>
+    <AssemblyTitle>SpeedChanger</AssemblyTitle>
+    <Product>SpeedChanger</Product>
     <Description>A Hollow Knight Mod</Description>
     <Copyright>Copyright ©  2025</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
