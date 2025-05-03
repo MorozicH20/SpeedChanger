@@ -1,18 +1,15 @@
 ﻿using Modding;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace HkSpeedUp
+namespace SpeedChanger
 {
     internal class ModDisplay
     {
         internal static ModDisplay Instance;
 
-        private string DisplayText = "Boss Attacks";
+        private string DisplayText = "";
         private DateTime DisplayExpireTime = DateTime.Now;
         private TimeSpan DisplayDuration = TimeSpan.FromSeconds(6);
         private Vector2 TextSize = new(800, 500);
@@ -20,6 +17,8 @@ namespace HkSpeedUp
 
         private GameObject _canvas;
         private UnityEngine.UI.Text _text;
+
+        private bool globalSwitch = false;
 
         private void Create()
         {
@@ -43,6 +42,7 @@ namespace HkSpeedUp
 
         public void Destroy()
         {
+            globalSwitch = false;
             if (_canvas != null) UnityEngine.Object.Destroy(_canvas);
             _canvas = null;
             _text = null;
@@ -50,6 +50,7 @@ namespace HkSpeedUp
 
         public void Update()
         {
+            if (!globalSwitch) return;
             Create();
 
             _text.text = DisplayText;
@@ -59,6 +60,7 @@ namespace HkSpeedUp
         {
             DisplayText = text.Trim();
             DisplayExpireTime = DateTime.Now + DisplayDuration;
+            globalSwitch = true;
             Update();
             Task.Delay(DisplayDuration + TimeSpan.FromMilliseconds(100)).ContinueWith(t => Update());
         }

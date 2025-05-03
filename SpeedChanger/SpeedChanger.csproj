@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- Change this to the path of your modded HK installation -->
-    <HollowKnightRefs>C:\GOG Games\Hollow Knight\Hollow Knight_Data\Managed</HollowKnightRefs>
+    <HollowKnightRefs>C:\Games\Hollow Knight\Hollow Knight_Data\Managed</HollowKnightRefs>
     <!-- Change this to the path where you want the ready-to-upload exports to be -->
     <ExportDir>C:\GOG Games\hk mod</ExportDir>
     <!-- Uncomment this to generate a documentation file to be included with the mod -->
     <!--<DocumentationFile>$(OutputPath)/$(AssemblyTitle).xml</DocumentationFile>-->
   </PropertyGroup>
   <PropertyGroup>
-    <RootNamespace>HkSpeedUp</RootNamespace>
-    <AssemblyName>HkSpeedUp</AssemblyName>
+    <RootNamespace>SpeedChanger</RootNamespace>
+    <AssemblyName>SpeedChanger</AssemblyName>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyTitle>HkSpeedUp</AssemblyTitle>
-    <Product>HkSpeedUp</Product>
+    <AssemblyTitle>SpeedChanger</AssemblyTitle>
+    <Product>SpeedChanger</Product>
     <Description>A Hollow Knight Mod</Description>
     <Copyright>Copyright ©  2025</Copyright>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
