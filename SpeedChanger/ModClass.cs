@@ -20,9 +20,10 @@ namespace SpeedChanger
 
         public int displayStyle = 0;
 
+        public string tip = "A list of all KeyCodes can be found here: https://docs.unity3d.com/6000.0/Documentation/ScriptReference/KeyCode.html";
         public string speedUpKeybind = "Alpha9";
         public string slowDownKeybind = "Alpha8";
-
+        
         public float step = 0.05f;
         private float _speed = 1.00f;
         public float speed
