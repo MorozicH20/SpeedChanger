@@ -44,7 +44,7 @@ namespace SpeedChanger
     [UsedImplicitly]
     public class SpeedChanger : Mod, IMenuMod, IGlobalSettings<GlobalSettings>
     {
-        public override string GetVersion() => "1.0.3";
+        public override string GetVersion() => "1.0.4";
 
         /* Global settings */
         public static GlobalSettings GS { get; set; } = new GlobalSettings();
