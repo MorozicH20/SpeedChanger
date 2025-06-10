@@ -1,5 +1,7 @@
 ﻿using Modding;
 using System;
+using System.Collections;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -18,8 +20,11 @@ namespace SpeedChanger
         private GameObject _canvas;
         private UnityEngine.UI.Text _text;
 
-        private bool globalSwitch = false;
 
+        public ModDisplay()
+        {
+            Create();
+        }
         private void Create()
         {
             if (_canvas != null) return;
@@ -42,17 +47,12 @@ namespace SpeedChanger
 
         public void Destroy()
         {
-            globalSwitch = false;
-            if (_canvas != null) UnityEngine.Object.Destroy(_canvas);
-            _canvas = null;
+            _canvas.SetActive(false);
             _text = null;
         }
 
         public void Update()
         {
-            if (!globalSwitch) return;
-            Create();
-
             _text.text = DisplayText;
             _canvas.SetActive(true);
         }
@@ -60,9 +60,7 @@ namespace SpeedChanger
         {
             DisplayText = text.Trim();
             DisplayExpireTime = DateTime.Now + DisplayDuration;
-            globalSwitch = true;
             Update();
-            Task.Delay(DisplayDuration + TimeSpan.FromMilliseconds(100)).ContinueWith(t => Update());
         }
     }
 }

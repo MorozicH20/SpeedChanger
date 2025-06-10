@@ -323,7 +323,7 @@
       <HintPath>$(HollowKnightRefs)/UnityEngine.XRModule.dll</HintPath>
     </Reference>
     <Reference Include="Vasi">
-      <HintPath>..\..\..\..\..\..\GOG Games\Hollow Knight\Hollow Knight_Data\Managed\Mods\Vasi\Vasi.dll</HintPath>
+      <HintPath>$(HollowKnightRefs)/Mods\Vasi\Vasi.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

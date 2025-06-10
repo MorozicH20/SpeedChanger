@@ -16,6 +16,8 @@ namespace SpeedChanger
 {
     public class GlobalSettings
     {
+        public bool globalSwitch = true;
+
         public bool lockSwitch = false;
 
         public int displayStyle = 0;
@@ -59,14 +61,13 @@ namespace SpeedChanger
         private KeyCode _speedUpKeybind = (KeyCode) System.Enum.Parse(typeof(KeyCode), GS.speedUpKeybind, true);
         private KeyCode _slowDownKeybind = (KeyCode)System.Enum.Parse(typeof(KeyCode), GS.slowDownKeybind, true);
 
-        private bool _globalSwitch = true;
         private void ChangeGlobalSwitchState(bool state)
         {
-            _globalSwitch = state;
+            GS.globalSwitch = state;
             if (!state)
                 Unload();
             else
-                Initialize();
+                Load();
         }
 
         /* Handle timescale changes */
@@ -74,7 +75,7 @@ namespace SpeedChanger
         {
             get
             {
-                return _globalSwitch ? GS.speed : 1;
+                return GS.globalSwitch ? GS.speed : 1;
             }
             set
             {
@@ -103,30 +104,22 @@ namespace SpeedChanger
                     Name = "Global Switch",
                     Description = "Turn mod On/Off",
                     Values = new string[] {
+                        "Off",
                         "On",
-                        "Off"
                     },
-                    Saver = opt => ChangeGlobalSwitchState(opt == 0 ? true : false),
-                    Loader = () => this._globalSwitch switch
-                    {
-                        false => 1,
-                        true => 0
-                    }
+                    Saver = opt => ChangeGlobalSwitchState(opt == 1),
+                    Loader = () => GS.globalSwitch ? 1 : 0
                 },
                 new IMenuMod.MenuEntry
                 {
                     Name = "Lock Switch",
                     Description = "Lock changing your speed",
                     Values = new string[] {
+                        "Off",
                         "On",
-                        "Off"
                     },
-                    Saver = opt => GS.lockSwitch = opt == 0 ? true : false,
-                    Loader = () => GS.lockSwitch switch
-                    {
-                        false => 1,
-                        true => 0
-                    }
+                    Saver = opt => GS.lockSwitch = opt == 1,
+                    Loader = () => GS.lockSwitch ? 1 : 0
                 },
                 new IMenuMod.MenuEntry
                 {
@@ -197,8 +190,13 @@ namespace SpeedChanger
             cursor.Emit(OpCodes.Mul);
         }
 
+
         /* Set up the hooks */
         public override void Initialize()
+        {
+            base.Initialize();
+        }
+        public void Load()
         {
             SpeedMultiplier = GS.speed;
 
@@ -221,7 +219,6 @@ namespace SpeedChanger
                     ? SpeedMultiplier.ToString(SpeedMultiplier >= 10f ? "00.00" : "0.00", CultureInfo.InvariantCulture)
                     : (Math.Round(SpeedMultiplier * 100)).ToString("0.##\\%");
                 ModDisplay.Instance.Display($"Game Speed: {speedString}");
-                ModDisplay.Instance.Update();
             }
 
             SpeedMultiplier = SpeedMultiplier;
