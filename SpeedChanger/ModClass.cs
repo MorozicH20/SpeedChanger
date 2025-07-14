@@ -11,6 +11,16 @@ using System.Reflection;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Collections;
+using Vasi;
+using Satchel.BetterMenus;
+using UnityEngine.UIElements;
+using IL.InControl;
+using HutongGames.PlayMaker.Actions;
+
+using PlayerActionSet = InControl.PlayerActionSet;
+using PlayerAction = InControl.PlayerAction;
+using Modding.Converters;
+using Newtonsoft.Json;
 
 namespace SpeedChanger
 {
@@ -22,10 +32,6 @@ namespace SpeedChanger
 
         public int displayStyle = 0;
 
-        public string tip = "A list of all KeyCodes can be found here: https://docs.unity3d.com/6000.0/Documentation/ScriptReference/KeyCode.html";
-        public string speedUpKeybind = "Alpha9";
-        public string slowDownKeybind = "Alpha8";
-        
         public float step = 0.05f;
         private float _speed = 1.00f;
         public float speed
@@ -39,131 +45,20 @@ namespace SpeedChanger
                 _speed = (float)Math.Round(value, 2);
             }
         }
+
+        [JsonConverter(typeof(PlayerActionSetConverter))]
+        public SpeedChangerBinds binds = new SpeedChangerBinds();
     }
-
     [UsedImplicitly]
-    public class SpeedChanger : Mod, IMenuMod, IGlobalSettings<GlobalSettings>
+    public class SpeedChanger : Mod, IGlobalSettings<GlobalSettings>, ICustomMenuMod
     {
-        public override string GetVersion() => "1.0.3";
+        public void OnLoadGlobal(GlobalSettings s) => GS = s;
 
-        /* Global settings */
-        public static GlobalSettings GS { get; set; } = new GlobalSettings();
+        public GlobalSettings OnSaveGlobal() => GS;
 
-        public void OnLoadGlobal(GlobalSettings s)
-        {
-            GS = s;
-        }
+        private GlobalSettings GS = new();
 
-        public GlobalSettings OnSaveGlobal()
-        {
-            return GS;
-        }
-        private KeyCode _speedUpKeybind = (KeyCode) System.Enum.Parse(typeof(KeyCode), GS.speedUpKeybind, true);
-        private KeyCode _slowDownKeybind = (KeyCode)System.Enum.Parse(typeof(KeyCode), GS.slowDownKeybind, true);
-
-        private void ChangeGlobalSwitchState(bool state)
-        {
-            GS.globalSwitch = state;
-            if (!state)
-                Unload();
-            else
-                Load();
-        }
-
-        /* Handle timescale changes */
-        public float SpeedMultiplier
-        {
-            get
-            {
-                return GS.globalSwitch ? GS.speed : 1;
-            }
-            set
-            {
-                if (value > 0)
-                {
-                    if (Time.timeScale != 0)
-                    {
-                        Time.timeScale = value;
-                    }
-                    GS.speed = value;
-                }
-            }
-        }
-
-        /* Create menu */
-        bool IMenuMod.ToggleButtonInsideMenu => true;
-
-        public bool ToggleButtonInsideMenu => true;
-
-        List<IMenuMod.MenuEntry> IMenuMod.GetMenuData(IMenuMod.MenuEntry? toggleButtonEntry)
-        {
-            return new List<IMenuMod.MenuEntry>
-            {
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Global Switch",
-                    Description = "Turn mod On/Off",
-                    Values = new string[] {
-                        "Off",
-                        "On",
-                    },
-                    Saver = opt => ChangeGlobalSwitchState(opt == 1),
-                    Loader = () => GS.globalSwitch ? 1 : 0
-                },
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Lock Switch",
-                    Description = "Lock changing your speed",
-                    Values = new string[] {
-                        "Off",
-                        "On",
-                    },
-                    Saver = opt => GS.lockSwitch = opt == 1,
-                    Loader = () => GS.lockSwitch ? 1 : 0
-                },
-                new IMenuMod.MenuEntry
-                {
-                    Name = "Display Style",
-                    Description = "Change how speed is displayed",
-                    Values = new string[] {
-                        "#.##",
-                        "%",
-                        "Off"
-                    },
-                    Saver = opt => {
-                        GS.displayStyle = opt;
-                        if (opt == 2)
-                        {
-                            ModDisplay.Instance.Destroy();
-                        }
-                    },
-                    Loader = () => GS.displayStyle
-                },
-                new IMenuMod.MenuEntry
-                {
-                    Name = $"Slow Game Down (-{GS.step})",
-                    Description = "Change in SpeedChangerGlobalSettings.json",
-                    Values = new string[] {
-                        GS.slowDownKeybind,
-                    },
-                    Saver = opt => {},
-                    Loader = () => 0
-                },
-                new IMenuMod.MenuEntry
-                {
-                    Name = $"Speed Game Up (+{GS.step})",
-                    Description = "Change in SpeedChangerGlobalSettings.json",
-                    Values = new string[] {
-                        GS.speedUpKeybind,
-                    },
-                    Saver = opt => {},
-                    Loader = () => 0
-                }
-            };
-        }
-
-        /* Handle freeze frames */
-        private ILHook[] _coroutineHooks;
+        public override string GetVersion() => "1.1.0";
 
         private static readonly MethodInfo[] FreezeCoroutines = (
             from method in typeof(GameManager).GetMethods()
@@ -173,6 +68,33 @@ namespace SpeedChanger
             select attr.StateMachineType into type
             select type.GetMethod("MoveNext", BindingFlags.NonPublic | BindingFlags.Instance)
         ).ToArray();
+
+        private ILHook[] _coroutineHooks;
+
+        private Menu menu;
+
+        public override void Initialize()
+        {
+            Time.timeScale = GS.speed;
+
+            On.GameManager.SetTimeScale_float += GameManager_SetTimeScale_1;
+            On.QuitToMenu.Start += QuitToMenu_Start;
+
+            _coroutineHooks = new ILHook[FreezeCoroutines.Length];
+
+            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
+            {
+                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
+
+                LogDebug($"Hooked {coro.DeclaringType?.Name}!");
+            }
+
+            ModHooks.HeroUpdateHook += Update;
+
+            ChangeGlobalSwitchState(GS.globalSwitch);
+
+            ModDisplay.Instance = new ModDisplay();
+        }
 
         private void ScaleFreeze(ILContext il)
         {
@@ -189,30 +111,33 @@ namespace SpeedChanger
 
             cursor.Emit(OpCodes.Mul);
         }
-
-
-        /* Set up the hooks */
-        public override void Initialize()
+        public float SpeedMultiplier
         {
-            base.Initialize();
-        }
-        public void Load()
-        {
-            SpeedMultiplier = GS.speed;
-
-            ModHooks.HeroUpdateHook += Update;
-
-            _coroutineHooks = new ILHook[FreezeCoroutines.Length];
-            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
+            get
             {
-                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
+                return GS.globalSwitch ? GS.speed : 1;
             }
-
-            ModDisplay.Instance = new ModDisplay();
+            set
+            {
+                if (value > 0)
+                {    
+                    Time.timeScale = value;
+                    GS.speed = value;
+                }
+            }
         }
 
+        public bool ToggleButtonInsideMenu => false;
+
+        private bool buttonPressedFrame;
         private void Update()
         {
+            if (!GS.globalSwitch)
+            {
+                ModDisplay.Instance.Display("");
+                return;
+            }
+
             if (GS.displayStyle != 2)
             {
                 string speedString = GS.displayStyle == 0
@@ -220,31 +145,117 @@ namespace SpeedChanger
                     : (Math.Round(SpeedMultiplier * 100)).ToString("0.##\\%");
                 ModDisplay.Instance.Display($"Game Speed: {speedString}");
             }
+            else
+            {
+                ModDisplay.Instance.Display("");
+            }
 
             SpeedMultiplier = SpeedMultiplier;
 
             if (GS.lockSwitch) return;
 
-            if (Input.GetKeyDown(_speedUpKeybind))
+            if (!buttonPressedFrame && GS.binds.SpeedUp.IsPressed)
+            {
                 SpeedMultiplier += GS.step;
-
-            else if (Input.GetKeyDown(_slowDownKeybind))
+                buttonPressedFrame = true;
+            }
+            else if (!buttonPressedFrame && GS.binds.SlowDown.IsPressed)
+            {
                 SpeedMultiplier -= GS.step;
+                buttonPressedFrame = true;
+            }
+            buttonPressedFrame = GS.binds.SlowDown.IsPressed || GS.binds.SpeedUp.IsPressed;
         }
 
+        private IEnumerator QuitToMenu_Start(On.QuitToMenu.orig_Start orig, QuitToMenu self)
+        {
+            yield return orig(self);
+
+            TimeController.GenericTimeScale = GS.speed;
+        }
+
+        private void GameManager_SetTimeScale_1(On.GameManager.orig_SetTimeScale_float orig, GameManager self, float newTimeScale)
+        {
+
+            TimeController.GenericTimeScale = GS.speed;
+        }
+        private void ChangeGlobalSwitchState(bool state)
+        {
+            GS.globalSwitch = state;
+            if (!state)
+                Unload();
+            else
+                Load();
+        }
+        public void Load()
+        {
+            SpeedMultiplier = GS.speed;
+
+            _coroutineHooks = new ILHook[FreezeCoroutines.Length];
+            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
+            {
+                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
+            }
+        }
         public void Unload()
         {
-            ModDisplay.Instance.Destroy();
-
             foreach (ILHook hook in _coroutineHooks)
                 hook.Dispose();
 
-            ModHooks.HeroUpdateHook -= Update;
+            Time.timeScale = 1;
 
-            if (Time.timeScale != 0)
+            On.GameManager.SetTimeScale_float -= GameManager_SetTimeScale_1;
+            On.QuitToMenu.Start -= QuitToMenu_Start;
+        }
+
+        public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
+        {
+            if (menu != null) return menu.GetMenuScreen(modListMenu);
+
+            menu = new Menu("SpeedChanger", new Element[]
             {
-                Time.timeScale = 1;
-            }
+                new HorizontalOption
+                (
+                    name: "Global Switch",
+                    description: "Turn mod On/Off",
+                    values: new string[] { "On", "Off" },
+                    applySetting: opt => ChangeGlobalSwitchState(opt == 1),
+                    loadSetting: () => GS.globalSwitch ? 0 : 1
+                ),
+                new HorizontalOption
+                (
+                    name: "Display Style",
+                    description: "Change how speed is displayed",
+                    values: new string[] { "#.##", "%", "Off" },
+                    applySetting: opt => GS.displayStyle = opt,
+                    loadSetting: () => GS.displayStyle
+                ),
+                new KeyBind
+                (
+                    name: "Increase game speed",
+                    playerAction: GS.binds.SpeedUp
+                ),
+                new KeyBind
+                (
+                    name: "Decrease game speed",
+                    playerAction: GS.binds.SlowDown
+                )
+            });
+
+            return menu.GetMenuScreen(modListMenu);
+        }
+    }
+    public class SpeedChangerBinds : PlayerActionSet
+    {
+        public PlayerAction SpeedUp;
+        public PlayerAction SlowDown;
+        public SpeedChangerBinds() 
+        {
+            SpeedUp = CreatePlayerAction("Speed Up");
+            SpeedUp.AddDefaultBinding(InControl.Key.Key8);
+
+            SlowDown = CreatePlayerAction("Slow Down");
+            SlowDown.AddDefaultBinding(InControl.Key.Key9);
         }
     }
 }
