@@ -53,14 +53,15 @@ namespace SpeedChanger
         public void OnLoadGlobal(GlobalSettings s)
         {
             GS = s;
-            ChangeGlobalSwitchState(GS.globalSwitch);
         }
 
         public GlobalSettings OnSaveGlobal() => GS;
 
         private GlobalSettings GS = new();
 
-        public override string GetVersion() => "1.1.1";
+        public override string GetVersion() => "1.1.2";
+
+        private float gameTimeScale = 1;
 
         private static readonly MethodInfo[] FreezeCoroutines = (
             from method in typeof(GameManager).GetMethods()
@@ -72,6 +73,20 @@ namespace SpeedChanger
         ).ToArray();
 
         private ILHook[] _coroutineHooks;
+        private void LoadCoroutineHooks()
+        {
+            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
+            {
+                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
+
+                LogDebug($"Hooked {coro.DeclaringType?.Name}!");
+            }
+        }
+        private void UnloadCoroutineHooks()
+        {
+            foreach (ILHook hook in _coroutineHooks)
+                hook.Dispose();
+        }
 
         private Menu menu;
 
@@ -83,13 +98,7 @@ namespace SpeedChanger
             On.QuitToMenu.Start += QuitToMenu_Start;
 
             _coroutineHooks = new ILHook[FreezeCoroutines.Length];
-
-            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
-            {
-                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
-
-                LogDebug($"Hooked {coro.DeclaringType?.Name}!");
-            }
+            LoadCoroutineHooks();
 
             ModHooks.HeroUpdateHook += Update;
 
@@ -150,6 +159,8 @@ namespace SpeedChanger
                 ModDisplay.Instance.Display("");
             }
 
+            if (gameTimeScale != 1) return;
+
             SpeedMultiplier = SpeedMultiplier;
 
             if (!buttonPressedFrame && GS.binds.SpeedUp.IsPressed)
@@ -175,15 +186,23 @@ namespace SpeedChanger
 
         private void GameManager_SetTimeScale_1(On.GameManager.orig_SetTimeScale_float orig, GameManager self, float newTimeScale)
         {
-            TimeController.GenericTimeScale = GS.speed;
+            Log(newTimeScale);
+            Time.timeScale = newTimeScale * GS.speed;
+            gameTimeScale = newTimeScale;
         }
         private void ChangeGlobalSwitchState(bool state)
         {
             GS.globalSwitch = state;
             if (state)
+            {
+                LoadCoroutineHooks();
                 SpeedMultiplier = GS.speed;
+            }
             else
+            {
+                UnloadCoroutineHooks();
                 Time.timeScale = 1;
+            }
         }
 
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
