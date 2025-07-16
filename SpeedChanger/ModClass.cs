@@ -78,8 +78,6 @@ namespace SpeedChanger
             foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
             {
                 _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
-
-                LogDebug($"Hooked {coro.DeclaringType?.Name}!");
             }
         }
         private void UnloadCoroutineHooks()
@@ -186,7 +184,6 @@ namespace SpeedChanger
 
         private void GameManager_SetTimeScale_1(On.GameManager.orig_SetTimeScale_float orig, GameManager self, float newTimeScale)
         {
-            Log(newTimeScale);
             Time.timeScale = newTimeScale * GS.speed;
             gameTimeScale = newTimeScale;
         }
