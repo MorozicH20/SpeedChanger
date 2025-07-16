@@ -28,8 +28,6 @@ namespace SpeedChanger
     {
         public bool globalSwitch = true;
 
-        public bool lockSwitch = false;
-
         public int displayStyle = 0;
 
         public float step = 0.05f;
@@ -52,13 +50,17 @@ namespace SpeedChanger
     [UsedImplicitly]
     public class SpeedChanger : Mod, IGlobalSettings<GlobalSettings>, ICustomMenuMod
     {
-        public void OnLoadGlobal(GlobalSettings s) => GS = s;
+        public void OnLoadGlobal(GlobalSettings s)
+        {
+            GS = s;
+            ChangeGlobalSwitchState(GS.globalSwitch);
+        }
 
         public GlobalSettings OnSaveGlobal() => GS;
 
         private GlobalSettings GS = new();
 
-        public override string GetVersion() => "1.1.0";
+        public override string GetVersion() => "1.1.1";
 
         private static readonly MethodInfo[] FreezeCoroutines = (
             from method in typeof(GameManager).GetMethods()
@@ -90,8 +92,6 @@ namespace SpeedChanger
             }
 
             ModHooks.HeroUpdateHook += Update;
-
-            ChangeGlobalSwitchState(GS.globalSwitch);
 
             ModDisplay.Instance = new ModDisplay();
         }
@@ -152,8 +152,6 @@ namespace SpeedChanger
 
             SpeedMultiplier = SpeedMultiplier;
 
-            if (GS.lockSwitch) return;
-
             if (!buttonPressedFrame && GS.binds.SpeedUp.IsPressed)
             {
                 SpeedMultiplier += GS.step;
@@ -171,41 +169,21 @@ namespace SpeedChanger
         {
             yield return orig(self);
 
-            TimeController.GenericTimeScale = GS.speed;
+            Time.timeScale = 1;
+            ModDisplay.Instance.Display("");
         }
 
         private void GameManager_SetTimeScale_1(On.GameManager.orig_SetTimeScale_float orig, GameManager self, float newTimeScale)
         {
-
             TimeController.GenericTimeScale = GS.speed;
         }
         private void ChangeGlobalSwitchState(bool state)
         {
             GS.globalSwitch = state;
-            if (!state)
-                Unload();
+            if (state)
+                SpeedMultiplier = GS.speed;
             else
-                Load();
-        }
-        public void Load()
-        {
-            SpeedMultiplier = GS.speed;
-
-            _coroutineHooks = new ILHook[FreezeCoroutines.Length];
-            foreach ((MethodInfo coro, int idx) in FreezeCoroutines.Select((mi, idx) => (mi, idx)))
-            {
-                _coroutineHooks[idx] = new ILHook(coro, ScaleFreeze);
-            }
-        }
-        public void Unload()
-        {
-            foreach (ILHook hook in _coroutineHooks)
-                hook.Dispose();
-
-            Time.timeScale = 1;
-
-            On.GameManager.SetTimeScale_float -= GameManager_SetTimeScale_1;
-            On.QuitToMenu.Start -= QuitToMenu_Start;
+                Time.timeScale = 1;
         }
 
         public MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
@@ -219,7 +197,7 @@ namespace SpeedChanger
                     name: "Global Switch",
                     description: "Turn mod On/Off",
                     values: new string[] { "On", "Off" },
-                    applySetting: opt => ChangeGlobalSwitchState(opt == 1),
+                    applySetting: opt => ChangeGlobalSwitchState(opt == 0),
                     loadSetting: () => GS.globalSwitch ? 0 : 1
                 ),
                 new HorizontalOption
