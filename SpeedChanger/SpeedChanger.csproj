@@ -325,9 +325,6 @@
     <Reference Include="UnityEngine.XRModule">
       <HintPath>$(HollowKnightRefs)/UnityEngine.XRModule.dll</HintPath>
     </Reference>
-    <Reference Include="Vasi">
-      <HintPath>$(HollowKnightRefs)/Mods\Vasi\Vasi.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.md" />

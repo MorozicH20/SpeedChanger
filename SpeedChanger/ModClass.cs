@@ -11,7 +11,6 @@ using System.Reflection;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Collections;
-using Vasi;
 using Satchel.BetterMenus;
 using UnityEngine.UIElements;
 using IL.InControl;
@@ -59,7 +58,7 @@ namespace SpeedChanger
 
         private GlobalSettings GS = new();
 
-        public override string GetVersion() => "1.1.2";
+        public override string GetVersion() => "1.1.3";
 
         private float gameTimeScale = 1;
 
@@ -128,7 +127,7 @@ namespace SpeedChanger
             {
                 if (value > 0)
                 {    
-                    Time.timeScale = value;
+                    Time.timeScale = value * gameTimeScale;
                     GS.speed = value;
                 }
             }
@@ -142,6 +141,7 @@ namespace SpeedChanger
             if (!GS.globalSwitch)
             {
                 ModDisplay.Instance.Display("");
+                Time.timeScale = gameTimeScale;
                 return;
             }
 
@@ -156,8 +156,6 @@ namespace SpeedChanger
             {
                 ModDisplay.Instance.Display("");
             }
-
-            if (gameTimeScale != 1) return;
 
             SpeedMultiplier = SpeedMultiplier;
 
