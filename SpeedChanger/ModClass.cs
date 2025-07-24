@@ -90,8 +90,6 @@ namespace SpeedChanger
 
         public override void Initialize()
         {
-            Time.timeScale = GS.speed;
-
             On.GameManager.SetTimeScale_float += GameManager_SetTimeScale_1;
             On.QuitToMenu.Start += QuitToMenu_Start;
 
