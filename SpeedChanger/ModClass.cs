@@ -1,4 +1,4 @@
-﻿using Modding;
+using Modding;
 using System;
 using JetBrains.Annotations;
 using UnityEngine;
@@ -61,6 +61,7 @@ namespace SpeedChanger
         public override string GetVersion() => "1.1.3";
 
         private float gameTimeScale = 1;
+        private float _lastNonDefaultSpeed = 1.0f;
 
         private static readonly MethodInfo[] FreezeCoroutines = (
             from method in typeof(GameManager).GetMethods()
@@ -126,7 +127,7 @@ namespace SpeedChanger
             set
             {
                 if (value > 0)
-                {    
+                {
                     Time.timeScale = value * gameTimeScale;
                     GS.speed = value;
                 }
@@ -169,7 +170,27 @@ namespace SpeedChanger
                 SpeedMultiplier -= GS.step;
                 buttonPressedFrame = true;
             }
+            else if (!buttonPressedFrame && GS.binds.ToggleSpeed.WasPressed)
+            {
+                ToggleSpeed();
+            }
             buttonPressedFrame = GS.binds.SlowDown.IsPressed || GS.binds.SpeedUp.IsPressed;
+        }
+        private void ToggleSpeed()
+        {
+            if (!GS.globalSwitch) return;
+
+            float current = SpeedMultiplier;
+
+            if (Math.Abs(current - 1.0f) < 0.01f)
+            {
+                SpeedMultiplier = _lastNonDefaultSpeed;
+            }
+            else
+            {
+                _lastNonDefaultSpeed = current;
+                SpeedMultiplier = 1.0f;
+            }
         }
 
         private IEnumerator QuitToMenu_Start(On.QuitToMenu.orig_Start orig, QuitToMenu self)
@@ -231,7 +252,12 @@ namespace SpeedChanger
                 (
                     name: "Decrease game speed",
                     playerAction: GS.binds.SlowDown
-                )
+                ),
+                new KeyBind
+                (
+                    name: "Toggle Speed (1.0 ↔ Last)",
+                    playerAction: GS.binds.ToggleSpeed
+                )       
             });
 
             return menu.GetMenuScreen(modListMenu);
@@ -241,13 +267,16 @@ namespace SpeedChanger
     {
         public PlayerAction SpeedUp;
         public PlayerAction SlowDown;
-        public SpeedChangerBinds() 
+        public PlayerAction ToggleSpeed;
+        public SpeedChangerBinds()
         {
             SpeedUp = CreatePlayerAction("Speed Up");
             SpeedUp.AddDefaultBinding(InControl.Key.Key8);
 
             SlowDown = CreatePlayerAction("Slow Down");
             SlowDown.AddDefaultBinding(InControl.Key.Key9);
+            ToggleSpeed = CreatePlayerAction("Toggle Speed");
+            ToggleSpeed.AddDefaultBinding(InControl.Key.Key7);
         }
     }
 }
