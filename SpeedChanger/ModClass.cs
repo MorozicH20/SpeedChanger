@@ -58,7 +58,7 @@ namespace SpeedChanger
 
         private GlobalSettings GS = new();
 
-        public override string GetVersion() => "1.1.3";
+        public override string GetVersion() => "1.1.4";
 
         private float gameTimeScale = 1;
         private float _lastNonDefaultSpeed = 1.0f;
